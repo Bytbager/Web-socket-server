@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Werror -Wextra
 
 serv:
-	$(CC) $(CFLAGS) -o server main2.c
+	$(CC) $(CFLAGS) -o server main.c
 	./server
 
 clang:

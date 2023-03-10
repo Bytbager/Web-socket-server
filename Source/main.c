@@ -13,12 +13,13 @@ int main(void) {
     int server_sock, client_sock;
     unsigned int len = sizeof(struct sockaddr_in);
     char recv_msg[65536];
-
+    FILE *page;
+    char *page_text = malloc(2048*sizeof(char));
     if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket() error!");
         exit(-1);
     }
-
+    setsockopt(server_sock,SOL_SOCKET,SO_REUSEADDR, &(int) {1}, sizeof(int));
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(PORT);
@@ -38,10 +39,18 @@ int main(void) {
         perror("accept() error!");
         exit(-1);
     }
+    
     recv(client_sock, recv_msg, sizeof(recv_msg), 0);
     printf("%s\n",recv_msg);
-    char msg[] = "Web hello!!!";
-    send(client_sock, msg, sizeof(msg), 0);
+    char buffer[BUFSIZ] = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
+    int readsiz = strlen(buffer);
+    send(client_sock, buffer, readsiz, 0);
+    page = fopen("index.html", "r");
+    while((readsiz = fread(buffer, sizeof(char), BUFSIZ, page))!=0){
+        send(client_sock, buffer, readsiz, 0);
+    }
+    fclose(page);
+    free(page_text);
     close(client_sock);
     }
     return 0;
