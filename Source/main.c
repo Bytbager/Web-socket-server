@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <string.h>
+#include "libs/funcs.h"
 
 #define PORT 1234
 #define MAX_CONN 3
@@ -13,8 +14,6 @@ int main(void) {
     int server_sock, client_sock;
     unsigned int len = sizeof(struct sockaddr_in);
     char recv_msg[65536];
-    FILE *page;
-    char *page_text = malloc(2048*sizeof(char));
     if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket() error!");
         exit(-1);
@@ -41,16 +40,53 @@ int main(void) {
     }
     
     recv(client_sock, recv_msg, sizeof(recv_msg), 0);
-    printf("%s\n",recv_msg);
-    char buffer[BUFSIZ] = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
+    HTTPreq req = new_http();
+    parse_request(recv_msg, &req);
+    printf("%s %s %s\n",req.method,req.path,req.protocol);
+    if (strcmp(req.path, "/") == 0) {
+        parse_http("index.html", client_sock);
+    }
+    else if (strcmp(req.path, "/about/") == 0) {
+        parse_http("about.html", client_sock);
+    }
+    else if (strcmp(req.path, "/Books/books.html") == 0) {
+        parse_http("Books/books.html", client_sock);
+    }
+    else if (strcmp(req.path, "/Books/book1.html") == 0) {
+        parse_http("Books/book1.html", client_sock);
+    }
+    else if (strcmp(req.path, "/Books/book2.html") == 0) {
+        parse_http("Books/book2.html", client_sock);
+    }
+    else if (strcmp(req.path, "/images/images.html") == 0) {
+        parse_http("images/images.html", client_sock);
+    }
+    else if (strcmp(req.path, "/images/image1.html") == 0) {
+        parse_http("images/image1.html", client_sock);
+    }
+    else if (strcmp(req.path, "/images/image2.html") == 0) {
+        parse_http("images/image2.html", client_sock);
+    }
+    else if (strcmp(req.path, "/favicon.ico") == 0){
+        char buffer[BUFSIZ] = "HTTP/1.1 200 OK\nContent-Type: image/png\n\n";
     int readsiz = strlen(buffer);
     send(client_sock, buffer, readsiz, 0);
-    page = fopen("index.html", "r");
+    FILE *page = fopen("images/favicon.png", "r");
     while((readsiz = fread(buffer, sizeof(char), BUFSIZ, page))!=0){
         send(client_sock, buffer, readsiz, 0);
     }
     fclose(page);
-    free(page_text);
+    }
+    else {
+        char buffer[BUFSIZ] = "HTTP/1.1 404 OK\n\n";
+        int readsiz = strlen(buffer);
+        send(client_sock, buffer, readsiz, 0);
+        FILE *page = fopen("page404.html", "r");
+        while((readsiz = fread(buffer, sizeof(char), BUFSIZ, page))!=0){
+            send(client_sock, buffer, readsiz, 0);
+        }
+        fclose(page);
+    }
     close(client_sock);
     }
     return 0;
